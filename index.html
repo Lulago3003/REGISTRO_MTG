@@ -11,6 +11,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#F5FAF6;--white:#FFFFFF;--surface2:#EEF7F2;
@@ -78,7 +83,11 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .badge-apto{background:#E8F0FD;color:#2A52A0;border:1px solid #B8CCF0}
 .badge-comercial{background:var(--warn-bg);color:var(--warn);border:1px solid #F2C99A}
 .badge-industrial{background:#F2ECF8;color:#6A3A9A;border:1px solid #C8A8E8}
-.card-chips{display:flex;gap:6px;flex-wrap:wrap}
+.card-actions{display:grid;grid-template-columns:1fr auto;gap:8px;padding:0 13px 13px}
+.card-btn-detail{background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--text-mid);font-family:'Outfit',sans-serif;cursor:pointer;transition:all .15s}
+.card-btn-detail:active{background:var(--border)}
+.card-btn-pdf{background:linear-gradient(135deg,#1A3A6E,#2255A5);border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;font-family:'Outfit',sans-serif;cursor:pointer;transition:all .15s;box-shadow:0 3px 10px rgba(26,55,110,0.25);white-space:nowrap}
+.card-btn-pdf:active{transform:scale(0.96)}
 .chip{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:500;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid)}
 .chip.energy{background:#FFFBEA;color:#7A6000;border-color:#DDD080}
 
@@ -161,6 +170,8 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .add-breaker-btn:active{background:var(--green-pale)}
 
 /* BUTTONS */
+.btn-pdf{width:100%;padding:16px;border-radius:15px;border:none;cursor:pointer;background:linear-gradient(135deg,#1A3A6E,#2255A5);color:#fff;font-size:15.5px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.5px;transition:all .18s;box-shadow:0 6px 20px rgba(26,55,110,0.28);margin-top:6px;display:block}
+.btn-pdf:active{transform:scale(0.98)}
 .btn-primary{width:100%;padding:16px;border-radius:15px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--green),var(--green-mid));color:#fff;font-size:15.5px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.5px;transition:all .18s;box-shadow:0 6px 20px rgba(26,110,69,0.28)}
 .btn-primary:active{transform:scale(0.98)}
 .btn-secondary{width:100%;padding:14px;border-radius:15px;border:1.5px solid var(--border);background:var(--white);color:var(--text-mid);font-size:14.5px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;transition:all .18s;margin-top:10px;box-shadow:var(--shadow-sm)}
@@ -222,6 +233,50 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .empty-state p{font-size:13px;color:var(--text-dim);line-height:1.6}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+/* FILTROS */
+.filter-bar{display:flex;gap:7px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-pill{flex-shrink:0;padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);font-size:11.5px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-pill.active{background:var(--green);border-color:var(--green);color:#fff}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.stat-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow-sm);text-align:center}
+.stat-card .sc-num{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--green);line-height:1}
+.stat-card .sc-lbl{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1.5px;margin-top:4px}
+.stat-card.full{grid-column:1/-1}
+.chart-box{background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.chart-box h4{font-size:11px;font-weight:700;color:var(--text-mid);letter-spacing:1.5px;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-row .br-lbl{font-size:11px;color:var(--text-mid);width:90px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--green),var(--green-light));transition:width .6s ease}
+.bar-row .br-val{font-size:11px;font-weight:700;color:var(--green);width:24px;text-align:right}
+#map{height:320px;border-radius:16px;border:1.5px solid var(--border);overflow:hidden;margin-bottom:14px}
+.visit-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:9px;box-shadow:var(--shadow-sm)}
+.visit-card .vc-date{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px}
+.visit-card .vc-title{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:2px}
+.visit-card .vc-note{font-size:12px;color:var(--text-mid);line-height:1.5}
+.visit-card .vc-tech{font-size:11px;color:var(--green);font-weight:600;margin-top:5px}
+.checklist-item{display:flex;align-items:center;gap:11px;padding:12px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.checklist-item.checked{background:var(--green-pale);border-color:var(--border2)}
+.check-box{width:22px;height:22px;border-radius:7px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.checklist-item.checked .check-box{background:var(--green);border-color:var(--green);color:#fff}
+.check-lbl{font-size:13px;font-weight:500;color:var(--text)}
+.checklist-item.checked .check-lbl{color:var(--text-mid);text-decoration:line-through}
+.modal-overlay{position:fixed;inset:0;background:rgba(13,31,21,0.55);z-index:500;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--white);border-radius:24px 24px 0 0;padding:20px 18px 44px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-handle{width:38px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--green);margin-bottom:14px}
+#qr-container{display:flex;justify-content:center;padding:20px 0}
+#qr-container canvas,#qr-container img{border-radius:12px;border:2px solid var(--border)}
+.btn-whatsapp{width:100%;padding:15px;border-radius:15px;border:none;cursor:pointer;background:linear-gradient(135deg,#128C7E,#25D366);color:#fff;font-size:15px;font-weight:700;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 6px 20px rgba(18,140,126,0.3);margin-top:10px}
+.btn-whatsapp:active{transform:scale(0.98)}
+.filter-pill.fp-estado{border-color:#E8B4B4}.filter-pill.fp-estado.active{background:var(--red);border-color:var(--red)}
+.btn-drive{width:100%;padding:15px;border-radius:15px;border:none;cursor:pointer;background:linear-gradient(135deg,#1557b0,#1a73e8);color:#fff;font-size:15px;font-weight:700;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 6px 20px rgba(26,115,232,0.28);margin-bottom:9px}
+.btn-drive:active{transform:scale(0.98)}
+.drive-status{font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:4px;font-weight:500}
+.drive-status.connected{color:var(--green)}
+
 </style>
 </head>
 <body>
@@ -247,14 +302,50 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
       <span class="search-icon">🔍</span>
       <input type="text" placeholder="Buscar por nombre, dirección, propietario…" id="search-input" oninput="filterProperties()">
     </div>
+    <div class="filter-bar" id="filter-bar">
+      <div class="filter-pill active" data-filter="todos" onclick="setFilter(this,'todos')">Todos</div>
+      <div class="filter-pill" data-filter="Casa" onclick="setFilter(this,'Casa')">🏠 Casa</div>
+      <div class="filter-pill" data-filter="Apartamento" onclick="setFilter(this,'Apartamento')">🏢 Apartamento</div>
+      <div class="filter-pill" data-filter="Comercial" onclick="setFilter(this,'Comercial')">🏪 Comercial</div>
+      <div class="filter-pill" data-filter="Industrial" onclick="setFilter(this,'Industrial')">🏭 Industrial</div>
+      <div class="filter-pill fp-estado" data-filter="Solar" onclick="setFilter(this,'Solar')">☀️ Solar</div>
+      <div class="filter-pill fp-estado" data-filter="Excelente" onclick="setFilter(this,'elec-Excelente')">✅ Excelente</div>
+      <div class="filter-pill fp-estado" data-filter="Deficiente" onclick="setFilter(this,'elec-Deficiente')">🔴 Deficiente</div>
+    </div>
     <div class="sec-label">Propiedades Registradas</div>
     <div id="properties-list"></div>
   </div>
   <button class="fab" onclick="gotoNew()">＋</button>
   <div class="nav-bar">
-    <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-lbl">INICIO</div></div>
+    <div class="nav-item active" id="nav-home" onclick="goHome()"><div class="nav-icon">🏠</div><div class="nav-lbl">INICIO</div></div>
     <div class="nav-item" onclick="gotoNew()"><div class="nav-icon">➕</div><div class="nav-lbl">NUEVO</div></div>
+    <div class="nav-item" onclick="showStats()"><div class="nav-icon">📊</div><div class="nav-lbl">STATS</div></div>
+    <div class="nav-item" onclick="showMap()"><div class="nav-icon">🗺️</div><div class="nav-lbl">MAPA</div></div>
     <div class="nav-item" onclick="openExport()"><div class="nav-icon">📤</div><div class="nav-lbl">EXPORTAR</div></div>
+  </div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div class="screen" id="screen-stats">
+  <div class="header">
+    <div class="btn-icon" onclick="goHome()" style="margin-right:4px">←</div>
+    <div class="logo-pill"><div class="logo-dot"></div><div class="logo-dot on"></div><span>MTG</span></div>
+    <div class="header-titles"><h1>Estadísticas</h1><p>RESUMEN GENERAL</p></div>
+  </div>
+  <div class="scroll-body" style="padding-top:18px" id="stats-body"></div>
+</div>
+
+<!-- ═══ MAPA ═══ -->
+<div class="screen" id="screen-map">
+  <div class="header">
+    <div class="btn-icon" onclick="goHome()" style="margin-right:4px">←</div>
+    <div class="logo-pill"><div class="logo-dot"></div><div class="logo-dot on"></div><span>MTG</span></div>
+    <div class="header-titles"><h1>Mapa</h1><p>INSTALACIONES</p></div>
+  </div>
+  <div class="scroll-body" style="padding-top:18px">
+    <div id="map"></div>
+    <div class="sec-label">Propiedades en el mapa</div>
+    <div id="map-list"></div>
   </div>
 </div>
 
@@ -296,6 +387,17 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
       <div class="field-row">
         <div class="field"><label>TÉCNICO INSTALADOR</label><input type="text" id="f-tech" placeholder="Nombre del técnico MTG"></div>
         <div class="field"><label>FECHA DE INSTALACIÓN</label><input type="date" id="f-date"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>HORA DE INSTALACIÓN</label><input type="time" id="f-time"></div>
+        <div class="field"><label>ESTADO DE SEGUIMIENTO</label>
+          <select id="f-status">
+            <option value="Instalado">✅ Instalado</option>
+            <option value="Pendiente revisión">🔄 Pendiente revisión</option>
+            <option value="Activo en PAOER">⚡ Activo en PAOER</option>
+            <option value="Con incidencia">⚠️ Con incidencia</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -366,6 +468,22 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
     </div>
 
     <div class="form-block">
+      <div class="form-block-title">✅ CHECKLIST DE INSTALACIÓN</div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:13px;font-weight:500">Verifica cada punto antes de guardar el registro</p>
+      <div id="checklist-items"></div>
+    </div>
+
+    <div class="form-block">
+      <div class="form-block-title">📍 UBICACIÓN GPS</div>
+      <div class="field-row">
+        <div class="field"><label>LATITUD</label><input type="number" id="f-lat" placeholder="Ej: 8.9936" step="any"></div>
+        <div class="field"><label>LONGITUD</label><input type="number" id="f-lng" placeholder="Ej: -79.5197" step="any"></div>
+      </div>
+      <button type="button" onclick="getGPS()" style="width:100%;padding:11px;border-radius:12px;border:1.5px dashed var(--border2);background:var(--surface2);color:var(--green);font-size:13px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;margin-top:4px">📍 Obtener ubicación actual</button>
+      <div class="field-hint">La ubicación aparecerá en el mapa de instalaciones.</div>
+    </div>
+
+    <div class="form-block">
       <div class="form-block-title">📝 ESTADO Y OBSERVACIONES</div>
       <div class="field"><label>ESTADO GENERAL DE LA INSTALACIÓN ELÉCTRICA</label>
         <select id="f-elec-state">
@@ -405,6 +523,12 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   </div>
   <input type="file" id="logo-file" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
   <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+  <div style="border-top:1.5px solid var(--border);margin:14px 0 12px"></div>
+  <div class="drive-status" id="drive-status-lbl">Google Drive: no conectado</div>
+  <button class="btn-drive" id="btn-drive-action" onclick="driveAction()">
+    <span id="drive-btn-icon">☁️</span>
+    <span id="drive-btn-text">Conectar con Google Drive</span>
+  </button>
   <button class="btn-secondary" onclick="closeExport()" style="margin-top:4px">Cerrar</button>
 </div>
 <div class="toast" id="toast"></div>
@@ -431,7 +555,7 @@ const CIRCUIT_TYPES=[
 window.onload=()=>{
   try{const s=localStorage.getItem('mtg_v2');if(s)properties=JSON.parse(s);}catch(e){}
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-  renderPhotoSections(); renderProperties(); updateStats();
+  renderPhotoSections(); renderChecklist(); renderProperties(); updateStats();
   // Restore saved logo
   const savedLogo=localStorage.getItem('mtg_logo');
   if(savedLogo) applyLogoPreview(savedLogo);
@@ -552,8 +676,11 @@ function resetForm(){
   editingId=null;breakerCount=0;currentEnergy='Solo Red Eléctrica';
   document.getElementById('form-header-title').textContent='Nueva Instalación';
   document.getElementById('save-btn').textContent='💾 Guardar Registro';
-  ['f-name','f-address','f-owner','f-phone','f-rooms','f-tech','f-serial','f-meter-loc','f-ct','f-wifi','f-meter-obs','f-notes','f-bill1','f-bill2','f-bill1-month','f-bill2-month']
+  ['f-name','f-address','f-owner','f-phone','f-rooms','f-tech','f-serial','f-meter-loc','f-ct','f-wifi','f-meter-obs','f-notes','f-bill1','f-bill2','f-bill1-month','f-bill2-month','f-lat','f-lng','f-time']
     .forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  document.getElementById('f-status').value='Instalado';
+  checklistState={};
+  renderChecklist();
   document.getElementById('f-phase').value='Monofásico 120V';
   document.getElementById('f-conn').value='WiFi';
   document.getElementById('f-elec-state').value='Excelente';
@@ -606,6 +733,11 @@ function saveProperty(){
     bill2Month:document.getElementById('f-bill2-month').value,
     photos:JSON.parse(JSON.stringify(photoData)),
     breakers:collectBreakers(),
+    installTime:document.getElementById('f-time').value,
+    status:document.getElementById('f-status').value||'Instalado',
+    lat:document.getElementById('f-lat').value,
+    lng:document.getElementById('f-lng').value,
+    checklist:JSON.parse(JSON.stringify(checklistState)),
   };
   if(editingId){const idx=properties.findIndex(p=>p.id===editingId);if(idx>=0)properties[idx]=prop;else properties.unshift(prop);}
   else properties.unshift(prop);
@@ -626,9 +758,10 @@ function renderProperties(list=null){
     if(p.energyType==='Solar + Batería')chips.push('<span class="chip energy">🔋 Solar + Batería</span>');
     chips.push(`<span class="chip">🔌 ${p.breakers?.length||0} circuitos</span>`);
     if(p.installDate)chips.push(`<span class="chip">📅 ${p.installDate}</span>`);
-    return`<div class="prop-card" onclick="showDetail('${p.id}')" style="animation-delay:${Math.min(i,6)*.05}s">
+    if(p.status&&p.status!=='Instalado'){const sc={'Pendiente revisión':'#C96A1A','Activo en PAOER':'#2255A5','Con incidencia':'#B83232'}[p.status]||'#1A6E45';chips.push(`<span class="chip" style="color:${sc};border-color:${sc}">${p.status}</span>`);}
+    return`<div class="prop-card" style="animation-delay:${Math.min(i,6)*.05}s">
       <div class="card-stripe"></div>
-      <div class="card-body">
+      <div class="card-body" onclick="showDetail('${p.id}')" style="cursor:pointer">
         <div class="card-top">
           <div class="card-photo">${mainPhoto?`<img src="${mainPhoto.data}" alt="">`:'🏠'}</div>
           <div class="card-info">
@@ -638,6 +771,10 @@ function renderProperties(list=null){
           <span class="card-badge ${bc}">${p.propType}</span>
         </div>
         <div class="card-chips">${chips.join('')}</div>
+      </div>
+      <div class="card-actions">
+        <button class="card-btn-detail" onclick="showDetail('${p.id}')">Ver detalle</button>
+        <button class="card-btn-pdf" onclick="generatePDF('${p.id}')">📄 Informe PDF</button>
       </div>
     </div>`;
   }).join('');
@@ -723,6 +860,9 @@ function showDetail(id){
       <div class="info-box"><div class="ikey">TELÉFONO</div><div class="ival">${p.phone||'—'}</div></div>
       <div class="info-box"><div class="ikey">TÉCNICO</div><div class="ival">${p.tech||'—'}</div></div>
       <div class="info-box"><div class="ikey">FECHA INSTALACIÓN</div><div class="ival">${p.installDate||'—'}</div></div>
+      ${p.installTime?`<div class="info-box"><div class="ikey">HORA INSTALACIÓN</div><div class="ival">${p.installTime}</div></div>`:''}
+      ${p.status?`<div class="info-box"><div class="ikey">ESTADO</div><div class="ival" style="color:${{ 'Instalado':'#1A6E45','Pendiente revisión':'#C96A1A','Activo en PAOER':'#2255A5','Con incidencia':'#B83232'}[p.status]||'#1A6E45'}">${p.status}</div></div>`:''}
+      ${p.visits?.length?`<div class="info-box"><div class="ikey">VISITAS REGISTRADAS</div><div class="ival">${p.visits.length}</div></div>`:''}
     </div>
     ${energySection}${billSection}
     <div class="sec-label">📡 MEDIDOR EMPORIA VUE 3</div>
@@ -735,7 +875,13 @@ function showDetail(id){
     </div>
     ${gallerySection}${breakersSection}
     ${p.notes?`<div class="info-box full" style="margin-bottom:14px"><div class="ikey">📝 OBSERVACIONES</div><div class="ival" style="font-size:13px;font-weight:400;margin-top:6px;line-height:1.6">${p.notes}</div></div>`:''}
-    <button class="btn-primary" onclick="editProperty('${p.id}')" style="margin-top:6px">✏️ Editar Registro</button>
+    <button class="btn-pdf" onclick="generatePDF('${p.id}')">📄 Generar Informe PDF para Cliente</button>
+    <button class="btn-whatsapp" onclick="sendWhatsApp('${p.id}')">💬 Enviar por WhatsApp</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <button class="btn-secondary" onclick="showQR('${p.id}')">📱 Código QR</button>
+      <button class="btn-secondary" onclick="showVisits('${p.id}')">📋 Historial</button>
+    </div>
+    <button class="btn-primary" onclick="editProperty('${p.id}')" style="margin-top:10px">✏️ Editar Registro</button>
     <button class="btn-secondary btn-danger" onclick="deleteProperty('${p.id}')">🗑 Eliminar Registro</button>
     <div style="height:18px"></div>`;
   showScreen('screen-detail');
@@ -755,9 +901,13 @@ function editProperty(id){
     ['name','address','owner','phone','rooms','tech','serial','meter-loc','ct','wifi','meter-obs','notes','bill1','bill1-month','bill2','bill2-month']
       .forEach(k=>set(`f-${k}`,p[k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]));
     set('f-date',p.installDate);
+    set('f-time',p.installTime);
+    set('f-lat',p.lat);
+    set('f-lng',p.lng);
     document.getElementById('f-phase').value=p.phase||'Monofásico 120V';
     document.getElementById('f-conn').value=p.connectivity||'WiFi';
     document.getElementById('f-elec-state').value=p.elecState||'Excelente';
+    document.getElementById('f-status').value=p.status||'Instalado';
     if(p.energyExtra){
       setTimeout(()=>{
         set('f-solar-kw',p.energyExtra.solarKw);set('f-solar-panels',p.energyExtra.solarPanels);
@@ -1029,11 +1179,1060 @@ function handleImport(e){
     }catch{showToast('❌ Archivo inválido');}
   };r.readAsText(file);e.target.value='';
 }
+
+// ═══════════════════════════════════════
+//  DATOS NUEVOS
+// ═══════════════════════════════════════
+const CHECKLIST_ITEMS = [
+  '¿Se verificó la conexión a tierra (GND)?',
+  '¿El medidor Emporia quedó correctamente instalado?',
+  '¿Se probó la conectividad WiFi/red?',
+  '¿Se registraron todos los breakers con su sensor CT?',
+  '¿Se tomaron fotos de fachada, panel y medidor?',
+  '¿Se verificaron las facturas con el cliente?',
+  '¿El cliente confirmó los datos de la instalación?',
+];
+
+const STATUS_COLORS = {
+  'Instalado':'#1A6E45',
+  'Pendiente revisión':'#C96A1A',
+  'Activo en PAOER':'#2255A5',
+  'Con incidencia':'#B83232'
+};
+
+let currentVisitPropId = null;
+let activeFilter = 'todos';
+let mapInstance = null;
+
+// ═══════════════════════════════════════
+//  FILTROS
+// ═══════════════════════════════════════
+function setFilter(el, filter){
+  document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = filter;
+  applyFilter();
+}
+
+function applyFilter(){
+  let filtered = properties;
+  if(activeFilter !== 'todos'){
+    if(activeFilter.startsWith('elec-')){
+      const state = activeFilter.replace('elec-','');
+      filtered = properties.filter(p=>p.elecState===state);
+    } else if(activeFilter === 'Solar'){
+      filtered = properties.filter(p=>p.energyType&&p.energyType!=='Solo Red Eléctrica');
+    } else {
+      filtered = properties.filter(p=>p.propType===activeFilter);
+    }
+  }
+  renderProperties(filtered);
+}
+
+// ═══════════════════════════════════════
+//  CHECKLIST
+// ═══════════════════════════════════════
+let checklistState = {};
+
+function renderChecklist(){
+  checklistState = {};
+  CHECKLIST_ITEMS.forEach((_,i)=>checklistState[i]=false);
+  const c = document.getElementById('checklist-items');
+  if(!c) return;
+  c.innerHTML = CHECKLIST_ITEMS.map((item,i)=>`
+    <div class="checklist-item" id="chk-${i}" onclick="toggleCheck(${i})">
+      <div class="check-box" id="chkbox-${i}"></div>
+      <span class="check-lbl">${item}</span>
+    </div>`).join('');
+}
+
+function toggleCheck(i){
+  checklistState[i] = !checklistState[i];
+  const row = document.getElementById(`chk-${i}`);
+  const box = document.getElementById(`chkbox-${i}`);
+  if(checklistState[i]){
+    row.classList.add('checked');
+    box.textContent = '✓';
+  } else {
+    row.classList.remove('checked');
+    box.textContent = '';
+  }
+}
+
+// ═══════════════════════════════════════
+//  GPS
+// ═══════════════════════════════════════
+function getGPS(){
+  if(!navigator.geolocation){ showToast('⚠️ GPS no disponible'); return; }
+  showToast('📍 Obteniendo ubicación…');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    document.getElementById('f-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('f-lng').value = pos.coords.longitude.toFixed(6);
+    showToast('✅ Ubicación obtenida');
+  }, ()=>showToast('❌ No se pudo obtener la ubicación'));
+}
+
+// ═══════════════════════════════════════
+//  ESTADÍSTICAS
+// ═══════════════════════════════════════
+function showStats(){
+  const body = document.getElementById('stats-body');
+  const total = properties.length;
+  const totalBreakers = properties.reduce((a,p)=>a+(p.breakers?.length||0),0);
+  const solar = properties.filter(p=>p.energyType&&p.energyType!=='Solo Red Eléctrica').length;
+  const conFotos = properties.filter(p=>Object.values(p.photos||{}).flat().length>0).length;
+  const bills = properties.filter(p=>p.bill1||p.bill2);
+  const avgBill = bills.length ? (bills.reduce((a,p)=>{
+    const b1=p.bill1?parseFloat(p.bill1):0,b2=p.bill2?parseFloat(p.bill2):0;
+    return a+(b1&&b2?(b1+b2)/2:(b1||b2));
+  },0)/bills.length).toFixed(2) : '—';
+
+  // Distribución por tipo
+  const tipos = {};
+  properties.forEach(p=>{ tipos[p.propType||'Casa']=(tipos[p.propType||'Casa']||0)+1; });
+
+  // Distribución por estado eléctrico
+  const estados = {};
+  properties.forEach(p=>{ estados[p.elecState||'—']=(estados[p.elecState||'—']||0)+1; });
+
+  // Instalaciones por mes
+  const meses = {};
+  properties.forEach(p=>{
+    if(p.installDate){
+      const m = p.installDate.substring(0,7);
+      meses[m]=(meses[m]||0)+1;
+    }
+  });
+  const mesesSort = Object.entries(meses).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
+  const maxMes = Math.max(...mesesSort.map(m=>m[1]),1);
+
+  // Estado de seguimiento
+  const seguimiento = {};
+  properties.forEach(p=>{ seguimiento[p.status||'Instalado']=(seguimiento[p.status||'Instalado']||0)+1; });
+
+  const maxTipo = Math.max(...Object.values(tipos),1);
+  const maxEstado = Math.max(...Object.values(estados),1);
+
+  body.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="sc-num">${total}</div><div class="sc-lbl">PROPIEDADES</div></div>
+      <div class="stat-card"><div class="sc-num">${totalBreakers}</div><div class="sc-lbl">CIRCUITOS</div></div>
+      <div class="stat-card"><div class="sc-num">${solar}</div><div class="sc-lbl">CON ENERGÍA SOLAR</div></div>
+      <div class="stat-card"><div class="sc-num">${conFotos}</div><div class="sc-lbl">CON FOTOS</div></div>
+      <div class="stat-card full"><div class="sc-num">${avgBill==='—'?'—':'$'+avgBill}</div><div class="sc-lbl">FACTURA PROMEDIO</div></div>
+    </div>
+
+    <div class="chart-box">
+      <h4>INSTALACIONES POR MES</h4>
+      ${mesesSort.length ? mesesSort.map(([mes,n])=>`
+        <div class="bar-row">
+          <span class="br-lbl">${mes}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((n/maxMes)*100)}%"></div></div>
+          <span class="br-val">${n}</span>
+        </div>`).join('') : '<p style="font-size:13px;color:var(--text-dim)">Sin fechas registradas aún</p>'}
+    </div>
+
+    <div class="chart-box">
+      <h4>TIPO DE PROPIEDAD</h4>
+      ${Object.entries(tipos).map(([tipo,n])=>`
+        <div class="bar-row">
+          <span class="br-lbl">${tipo}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((n/maxTipo)*100)}%"></div></div>
+          <span class="br-val">${n}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="chart-box">
+      <h4>ESTADO ELÉCTRICO</h4>
+      ${Object.entries(estados).map(([e,n])=>`
+        <div class="bar-row">
+          <span class="br-lbl">${e}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((n/maxEstado)*100)}%"></div></div>
+          <span class="br-val">${n}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="chart-box">
+      <h4>ESTADO DE SEGUIMIENTO</h4>
+      ${Object.entries(seguimiento).map(([s,n])=>`
+        <div class="bar-row">
+          <span class="br-lbl" style="font-size:10px">${s}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((n/total)*100)}%"></div></div>
+          <span class="br-val">${n}</span>
+        </div>`).join('')}
+    </div>
+    <div style="height:20px"></div>`;
+
+  showScreen('screen-stats');
+}
+
+// ═══════════════════════════════════════
+//  MAPA
+// ═══════════════════════════════════════
+function showMap(){
+  showScreen('screen-map');
+  setTimeout(()=>{
+    if(mapInstance){ mapInstance.remove(); mapInstance=null; }
+    // Centro por defecto: Panamá City
+    mapInstance = L.map('map').setView([8.9936,-79.5197],12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap',maxZoom:19
+    }).addTo(mapInstance);
+
+    const withGPS = properties.filter(p=>p.lat&&p.lng);
+    const listEl = document.getElementById('map-list');
+
+    if(!withGPS.length){
+      listEl.innerHTML='<p style="font-size:13px;color:var(--text-dim);padding:8px 0">Las propiedades aparecerán aquí cuando registres su ubicación GPS.</p>';
+      return;
+    }
+
+    const statusColors={'Instalado':'#1A6E45','Pendiente revisión':'#C96A1A','Activo en PAOER':'#2255A5','Con incidencia':'#B83232'};
+
+    withGPS.forEach(p=>{
+      const color = statusColors[p.status||'Instalado']||'#1A6E45';
+      const icon = L.divIcon({
+        html:`<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+        iconSize:[14,14], className:''
+      });
+      L.marker([parseFloat(p.lat),parseFloat(p.lng)],{icon})
+        .addTo(mapInstance)
+        .bindPopup(`<b style="font-size:13px">${p.name||'Propiedad'}</b><br><span style="font-size:11px;color:#555">${p.address||''}</span><br><span style="font-size:11px;color:${color}">${p.status||'Instalado'}</span>`);
+    });
+
+    // Ajustar mapa a los markers
+    const bounds = L.latLngBounds(withGPS.map(p=>[parseFloat(p.lat),parseFloat(p.lng)]));
+    mapInstance.fitBounds(bounds.pad(0.3));
+
+    listEl.innerHTML = withGPS.map(p=>`
+      <div class="prop-card" style="margin-bottom:9px" onclick="mapInstance.setView([${p.lat},${p.lng}],16);mapInstance.openPopup()">
+        <div class="card-body" style="cursor:pointer;padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${statusColors[p.status||'Instalado']||'#1A6E45'};flex-shrink:0"></div>
+            <div>
+              <div style="font-size:13.5px;font-weight:700;color:var(--text)">${p.name}</div>
+              <div style="font-size:11px;color:var(--text-dim)">${p.address||''}</div>
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+  }, 200);
+}
+
+// ═══════════════════════════════════════
+//  QR
+// ═══════════════════════════════════════
+function showQR(id){
+  const p = properties.find(x=>x.id===id); if(!p) return;
+  document.getElementById('qr-overlay').classList.add('show');
+  const container = document.getElementById('qr-container');
+  container.innerHTML = '';
+  document.getElementById('qr-prop-name').textContent = p.name + (p.address ? ' · ' + p.address : '');
+  const qrText = `MTG-PAOER|ID:${p.id}|${p.name}|${p.serial||''}|${p.owner||''}|${p.installDate||''}`;
+  try{
+    new QRCode(container,{text:qrText,width:200,height:200,colorDark:'#1A6E45',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }catch(e){ container.innerHTML='<p style="color:var(--text-dim);font-size:13px">No se pudo generar el QR</p>'; }
+}
+function closeQR(){ document.getElementById('qr-overlay').classList.remove('show'); }
+
+// ═══════════════════════════════════════
+//  HISTORIAL DE VISITAS
+// ═══════════════════════════════════════
+function showVisits(id){
+  currentVisitPropId = id;
+  const p = properties.find(x=>x.id===id); if(!p) return;
+  document.getElementById('visits-overlay').classList.add('show');
+  document.getElementById('v-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('v-tech').value = p.tech||'';
+  document.getElementById('v-title').value = '';
+  document.getElementById('v-note').value = '';
+  renderVisitsList(p);
+}
+function renderVisitsList(p){
+  const list = document.getElementById('visits-list');
+  const visits = p.visits||[];
+  if(!visits.length){
+    list.innerHTML='<p style="font-size:13px;color:var(--text-dim);margin-bottom:10px">Sin visitas registradas aún.</p>';
+    return;
+  }
+  list.innerHTML = visits.slice().reverse().map((v,i)=>`
+    <div class="visit-card">
+      <div class="vc-date">${v.date||'—'}</div>
+      <div class="vc-title">${v.title||'Visita técnica'}</div>
+      ${v.note?`<div class="vc-note">${v.note}</div>`:''}
+      <div class="vc-tech">👷 ${v.tech||'—'}</div>
+    </div>`).join('');
+}
+function saveVisit(){
+  const p = properties.find(x=>x.id===currentVisitPropId); if(!p) return;
+  const title = document.getElementById('v-title').value.trim();
+  if(!title){ showToast('⚠️ Escribe el motivo de la visita'); return; }
+  if(!p.visits) p.visits=[];
+  p.visits.push({
+    date:document.getElementById('v-date').value,
+    tech:document.getElementById('v-tech').value,
+    title:title,
+    note:document.getElementById('v-note').value,
+    createdAt:new Date().toISOString()
+  });
+  save();
+  renderVisitsList(p);
+  document.getElementById('v-title').value='';
+  document.getElementById('v-note').value='';
+  showToast('✅ Visita guardada');
+}
+function closeVisits(){ document.getElementById('visits-overlay').classList.remove('show'); currentVisitPropId=null; }
+
+// ═══════════════════════════════════════
+//  WHATSAPP
+// ═══════════════════════════════════════
+function sendWhatsApp(id){
+  const p = properties.find(x=>x.id===id); if(!p) return;
+  if(!p.phone){ showToast('⚠️ Esta propiedad no tiene teléfono registrado'); return; }
+  const phone = p.phone.replace(/[^0-9]/g,'');
+  const b1=p.bill1?parseFloat(p.bill1):0, b2=p.bill2?parseFloat(p.bill2):0;
+  const avg=(b1&&b2)?(b1+b2)/2:(b1||b2);
+  const msg = encodeURIComponent(
+    `Hola ${p.owner||'estimado cliente'}, le saluda Meta Technology Global.\n\n` +
+    `✅ *Instalación completada* — ${p.name}\n` +
+    `📅 Fecha: ${p.installDate||'—'}\n` +
+    `📡 Medidor Emporia Vue 3 instalado correctamente\n` +
+    `🔌 ${p.breakers?.length||0} circuitos registrados\n` +
+    `💡 Consumo promedio: ${avg?'$'+avg.toFixed(2):'No registrado'}\n\n` +
+    `Su hogar ahora está siendo monitoreado en tiempo real a través de la Plataforma PAOER.\n\n` +
+    `Para cualquier consulta puede contactarnos al +507 6674-3062.\n\n` +
+    `_Meta Technology Global · Plataforma PAOER_`
+  );
+  window.open(`https://wa.me/507${phone}?text=${msg}`,'_blank');
+}
+
+
+// ═══════════════════════════════════════
+//  GOOGLE DRIVE SYNC
+// ═══════════════════════════════════════
+// INSTRUCCIONES DE CONFIGURACIÓN:
+// 1. Ve a https://console.cloud.google.com
+// 2. Crea un proyecto nuevo → "MTG PAOER"
+// 3. Habilita "Google Drive API" y "Google Picker API"
+// 4. Crea credenciales → OAuth 2.0 → Aplicación Web
+// 5. En "Orígenes JS autorizados" agrega tu dominio de GitHub Pages
+// 6. Copia el Client ID y pégalo en MTG_DRIVE_CLIENT_ID abajo
+// 7. Crea una clave de API y pégala en MTG_DRIVE_API_KEY
+
+const MTG_DRIVE_CLIENT_ID = localStorage.getItem('mtg_drive_client_id') || '';
+const MTG_DRIVE_API_KEY   = localStorage.getItem('mtg_drive_api_key')   || '';
+const MTG_DRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.appdata';
+const MTG_DRIVE_FOLDER    = 'MTG_PAOER_Backups';
+const MTG_DRIVE_FILENAME  = 'MTG_PAOER_backup.json';
+
+let driveAccessToken = localStorage.getItem('mtg_drive_token') || null;
+let driveTokenClient = null;
+
+function driveInit(){
+  // Verificar si hay credenciales configuradas
+  const cid = localStorage.getItem('mtg_drive_client_id');
+  if(!cid){
+    // Mostrar modal de configuración
+    showDriveConfig();
+    return;
+  }
+  if(!driveTokenClient){
+    driveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: cid,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: async (resp) => {
+        if(resp.error){ showToast('❌ Error al conectar con Google'); return; }
+        driveAccessToken = resp.access_token;
+        localStorage.setItem('mtg_drive_token', driveAccessToken);
+        updateDriveUI(true);
+        await driveUpload();
+      }
+    });
+  }
+  driveTokenClient.requestAccessToken();
+}
+
+function driveAction(){
+  const cid = localStorage.getItem('mtg_drive_client_id');
+  if(!cid){
+    showDriveConfig();
+    return;
+  }
+  if(driveAccessToken){
+    // Ya conectado — subir directamente
+    mtgConfirm(
+      '¿Sincronizar con Google Drive?',
+      'Se subirá una copia de seguridad completa a tu Google Drive.',
+      ()=>driveUpload()
+    );
+  } else {
+    driveInit();
+  }
+}
+
+async function driveUpload(){
+  if(!driveAccessToken){ driveInit(); return; }
+  showToast('☁️ Subiendo a Google Drive…');
+  try {
+    const jsonData = JSON.stringify(properties, null, 2);
+    const fileName = `MTG_PAOER_${new Date().toISOString().split('T')[0]}.json`;
+
+    // Verificar si ya existe un archivo previo y borrarlo
+    const searchResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name+contains+'MTG_PAOER'+and+trashed=false&fields=files(id,name)`,
+      { headers:{ Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    if(searchResp.ok){
+      const searchData = await searchResp.json();
+      for(const file of (searchData.files||[])){
+        await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`,{
+          method:'DELETE',
+          headers:{ Authorization: 'Bearer ' + driveAccessToken }
+        });
+      }
+    }
+
+    // Subir nuevo archivo
+    const metadata = { name: fileName, mimeType: 'application/json' };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+    form.append('file', new Blob([jsonData],{type:'application/json'}));
+
+    const uploadResp = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+      { method:'POST', headers:{ Authorization: 'Bearer ' + driveAccessToken }, body: form }
+    );
+
+    if(uploadResp.ok){
+      const fileData = await uploadResp.json();
+      localStorage.setItem('mtg_drive_last_sync', new Date().toLocaleString('es-PA'));
+      updateDriveUI(true);
+      showToast('✅ Guardado en Google Drive');
+    } else if(uploadResp.status === 401){
+      // Token expirado
+      driveAccessToken = null;
+      localStorage.removeItem('mtg_drive_token');
+      updateDriveUI(false);
+      showToast('⚠️ Sesión expirada — vuelve a conectar');
+    } else {
+      showToast('❌ Error al subir a Drive');
+    }
+  } catch(e){
+    console.error('Drive error:', e);
+    showToast('❌ Sin conexión a internet');
+  }
+}
+
+async function driveDownload(){
+  if(!driveAccessToken){ showToast('⚠️ Conéctate primero a Google Drive'); return; }
+  showToast('☁️ Descargando desde Google Drive…');
+  try {
+    const searchResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name+contains+'MTG_PAOER'+and+trashed=false&orderBy=createdTime+desc&fields=files(id,name,createdTime)`,
+      { headers:{ Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    if(!searchResp.ok){ showToast('❌ Error al buscar en Drive'); return; }
+    const searchData = await searchResp.json();
+    if(!searchData.files?.length){ showToast('⚠️ No hay backups en Drive aún'); return; }
+
+    const latest = searchData.files[0];
+    const fileResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${latest.id}?alt=media`,
+      { headers:{ Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    if(!fileResp.ok){ showToast('❌ Error al descargar el backup'); return; }
+    const data = await fileResp.json();
+    if(!Array.isArray(data)){ showToast('❌ Archivo inválido'); return; }
+
+    mtgConfirm(
+      `¿Restaurar ${data.length} registros?`,
+      `Archivo: ${latest.name}. Esto reemplazará los datos actuales.`,
+      ()=>{
+        properties = data;
+        save();
+        updateStats();
+        renderProperties();
+        closeExport();
+        showToast(`✅ ${data.length} registros restaurados desde Drive`);
+      }
+    );
+  } catch(e){
+    showToast('❌ Sin conexión a internet');
+  }
+}
+
+function updateDriveUI(connected){
+  const lbl = document.getElementById('drive-status-lbl');
+  const btn = document.getElementById('drive-btn-text');
+  const icon = document.getElementById('drive-btn-icon');
+  if(!lbl) return;
+  if(connected){
+    const last = localStorage.getItem('mtg_drive_last_sync');
+    lbl.textContent = '✅ Google Drive conectado' + (last ? ' · Última sync: ' + last : '');
+    lbl.className = 'drive-status connected';
+    btn.textContent = 'Subir backup a Drive';
+    icon.textContent = '⬆️';
+    // Agregar botón de descargar si no existe
+    if(!document.getElementById('btn-drive-download')){
+      const dlBtn = document.createElement('button');
+      dlBtn.id = 'btn-drive-download';
+      dlBtn.className = 'btn-secondary';
+      dlBtn.style.marginBottom = '9px';
+      dlBtn.textContent = '⬇️ Restaurar desde Drive';
+      dlBtn.onclick = driveDownload;
+      document.getElementById('btn-drive-action').after(dlBtn);
+    }
+  } else {
+    lbl.textContent = 'Google Drive: no conectado';
+    lbl.className = 'drive-status';
+    btn.textContent = 'Conectar con Google Drive';
+    icon.textContent = '☁️';
+    const dl = document.getElementById('btn-drive-download');
+    if(dl) dl.remove();
+  }
+}
+
+function showDriveConfig(){
+  const cid = localStorage.getItem('mtg_drive_client_id')||'';
+  const key = localStorage.getItem('mtg_drive_api_key')||'';
+  mtgPrompt(
+    '⚙️ Configurar Google Drive',
+    `Para activar la sincronización necesitas un Client ID de Google Cloud Console.
+
+1. Ve a console.cloud.google.com
+2. Crea proyecto → Habilita Drive API
+3. Crea credencial OAuth → Copia el Client ID`,
+    cid,
+    'Pega aquí tu Google Client ID…',
+    (val)=>{
+      if(!val.trim()){ showToast('⚠️ Pega un Client ID válido'); return; }
+      localStorage.setItem('mtg_drive_client_id', val.trim());
+      showToast('✅ Client ID guardado — toca "Conectar" otra vez');
+    }
+  );
+}
+
+// Prompt modal para ingresar texto
+function mtgPrompt(title, body, currentVal, placeholder, onConfirm){
+  const overlay = document.getElementById('mtg-modal-overlay');
+  document.getElementById('mtg-modal-title').textContent = title;
+  document.getElementById('mtg-modal-body').innerHTML =
+    `<span style="font-size:12px;color:#7BA88D;line-height:1.5;white-space:pre-line">${body}</span>
+     <input type="text" id="mtg-prompt-input" value="${currentVal}" placeholder="${placeholder}"
+       style="width:100%;margin-top:12px;padding:11px 13px;border:1.5px solid #C8E6D5;border-radius:10px;font-size:13px;font-family:'Outfit',sans-serif;color:#0D1F15;background:#F5FAF6">`;
+  overlay.style.display = 'flex';
+  document.getElementById('mtg-modal-confirm').onclick = ()=>{
+    const val = document.getElementById('mtg-prompt-input')?.value||'';
+    mtgModalClose();
+    onConfirm(val);
+  };
+  setTimeout(()=>document.getElementById('mtg-prompt-input')?.focus(), 100);
+}
+
+// Restaurar estado de Drive al cargar
+window.addEventListener('load', ()=>{
+  const token = localStorage.getItem('mtg_drive_token');
+  if(token){ driveAccessToken = token; updateDriveUI(true); }
+});
+
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+// ═══════════════════════════════════════════════════
+//  GENERADOR DE INFORME PDF PROFESIONAL PARA CLIENTE
+// ═══════════════════════════════════════════════════
+async function generatePDF(id){
+  const p = properties.find(x=>x.id===id);
+  if(!p){ showToast('❌ Registro no encontrado'); return; }
+  showToast('⏳ Generando informe PDF…');
+  await new Promise(r=>setTimeout(r,100));
+
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W=210, H=297;
+  const ML=18, MR=18, MT=0;
+  const CW = W - ML - MR; // 174mm de ancho útil
+
+  const now = new Date();
+  const fechaHora = now.toLocaleDateString('es-PA',{year:'numeric',month:'long',day:'numeric'})
+    + ' — ' + now.toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'});
+  const fechaArchivo = now.toISOString().split('T')[0];
+
+  // ─── Helpers de color ───────────────────────────
+  const GREEN  = [26, 110, 69];
+  const GREEN2 = [34, 139, 85];
+  const GREENS = [194, 230, 213]; // borde suave
+  const GREENLG= [226, 245, 235]; // fondo muy claro
+  const DARK   = [13, 31, 21];
+  const MIDG   = [46, 92, 66];
+  const DIMTXT = [123, 168, 141];
+  const WHITE  = [255,255,255];
+  const NAVY   = [26, 58, 110];
+  const BGPAGE = [245, 250, 246];
+
+  function setFill(rgb){ doc.setFillColor(rgb[0],rgb[1],rgb[2]); }
+  function setTxt(rgb){  doc.setTextColor(rgb[0],rgb[1],rgb[2]); }
+  function setDraw(rgb){ doc.setDrawColor(rgb[0],rgb[1],rgb[2]); }
+
+  // ─── Logo desde localStorage ────────────────────
+  const logoDataUrl = localStorage.getItem('mtg_logo');
+
+  async function getImgData(dataUrl, maxW=800, maxH=600){
+    if(!dataUrl) return null;
+    return new Promise(resolve=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        if(!w||!h) return resolve(null);
+        if(w>maxW||h>maxH){ const r=Math.min(maxW/w,maxH/h); w=Math.round(w*r); h=Math.round(h*r); }
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(cv.toDataURL('image/jpeg',0.82));
+      };
+      img.onerror=()=>resolve(null);
+      img.src=dataUrl;
+    });
+  }
+
+  // ─── Encabezado (página 1 y cada página nueva) ──
+  let currentY = 0;
+
+  async function drawHeader(isFirst=false){
+    // Barra verde superior
+    setFill(GREEN);
+    doc.rect(0, 0, W, isFirst?52:36, 'F');
+    setFill(GREEN2);
+    doc.rect(0, isFirst?52:36, W, isFirst?8:5, 'F');
+
+    // Logo empresa (si existe) arriba a la izquierda
+    if(logoDataUrl && isFirst){
+      try{
+        const lg = await getImgData(logoDataUrl, 500, 200);
+        if(lg){
+          // Calcular dimensiones manteniendo proporción, max 40mm ancho, 20mm alto
+          const img=new Image();
+          await new Promise(res=>{ img.onload=res; img.src=lg; });
+          const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
+          let lw=40, lh=(ih/iw)*40;
+          if(lh>20){ lh=20; lw=(iw/ih)*20; }
+          doc.addImage(lg,'JPEG', ML, 8, lw, lh);
+        }
+      }catch(e){}
+    }
+
+    if(isFirst){
+      // Título empresa lado derecho
+      doc.setFont('helvetica','bold');
+      setTxt(WHITE);
+      doc.setFontSize(9);
+      doc.text('META TECHNOLOGY GLOBAL', W-MR, 12, {align:'right'});
+      doc.setFontSize(8);
+      doc.setFont('helvetica','normal');
+      setTxt([180,230,200]);
+      doc.text('Ciudad de Panamá, San Francisco, Calle 78C', W-MR, 17, {align:'right'});
+      doc.text('Tel: +507 6674-3062', W-MR, 21.5, {align:'right'});
+
+      // Título del informe (centrado)
+      doc.setFont('helvetica','bold');
+      setTxt(WHITE);
+      doc.setFontSize(18);
+      doc.text('INFORME DE INSTALACIÓN', W/2, 38, {align:'center'});
+      doc.setFontSize(10);
+      setTxt([160,220,185]);
+      doc.setFont('helvetica','normal');
+      doc.text('Plataforma PAOER · Emporia Vue 3 · Meta Technology Global', W/2, 44.5, {align:'center'});
+      doc.setFontSize(8);
+      doc.text('Monitoreo Energético Residencial en Tiempo Real', W/2, 49, {align:'center'});
+
+      currentY = 68;
+    } else {
+      doc.setFont('helvetica','bold');
+      setTxt(WHITE);
+      doc.setFontSize(9);
+      doc.text('META TECHNOLOGY GLOBAL', W/2-20, 14, {align:'center'});
+      doc.setFont('helvetica','normal');
+      setTxt([160,220,185]);
+      doc.setFontSize(7.5);
+      doc.text('Informe de Instalación — Plataforma PAOER', W/2-20, 19, {align:'center'});
+      doc.text(`${p.name||'Propiedad'} · ${p.owner||''}`, W/2-20, 24, {align:'center'});
+      currentY = 46;
+    }
+  }
+
+  // ─── Pie de página ──────────────────────────────
+  function drawFooter(pgNum, total){
+    setFill(GREEN);
+    doc.rect(0, H-14, W, 14, 'F');
+    doc.setFont('helvetica','normal');
+    setTxt([160,220,185]);
+    doc.setFontSize(7.5);
+    doc.text('Meta Technology Global · Plataforma PAOER · Confidencial', ML, H-7);
+    doc.text(`Página ${pgNum} de ${total}`, W-MR, H-7, {align:'right'});
+    doc.text(fechaHora, W/2, H-7, {align:'center'});
+  }
+
+  // ─── Sección encabezado de bloque ───────────────
+  function sectionTitle(label, icon=''){
+    if(currentY > H-50){ newPage(); }
+    currentY += 4;
+    setFill(GREEN);
+    doc.roundedRect(ML, currentY, CW, 9, 1.5, 1.5, 'F');
+    doc.setFont('helvetica','bold');
+    setTxt(WHITE);
+    doc.setFontSize(9);
+    doc.text(`${icon}  ${label.toUpperCase()}`, ML+4, currentY+6.2);
+    currentY += 13;
+  }
+
+  // ─── Fila de dato clave-valor ────────────────────
+  function dataRow(label, value, fullWidth=false, accent=false){
+    if(currentY > H-30){ newPage(); }
+    const rowH = 9;
+    const lw = fullWidth ? CW : CW/2;
+
+    setFill(accent ? GREENLG : [249,252,250]);
+    setDraw(GREENS);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(ML, currentY, lw, rowH, 1, 1, 'FD');
+
+    doc.setFont('helvetica','bold');
+    setTxt(DIMTXT);
+    doc.setFontSize(6.5);
+    doc.text(label.toUpperCase(), ML+3, currentY+3.5);
+
+    doc.setFont('helvetica','normal');
+    setTxt(accent ? GREEN : DARK);
+    doc.setFontSize(8.5);
+    const valStr = value ? String(value) : '—';
+    doc.text(valStr, ML+3, currentY+7.5, {maxWidth: lw-6});
+    currentY += rowH + 1.5;
+  }
+
+  // ─── Dos columnas de dato ────────────────────────
+  function dataRow2(label1,val1,label2,val2, accent1=false, accent2=false){
+    if(currentY > H-30){ newPage(); }
+    const rowH=9, hw=CW/2-1;
+
+    [0,1].forEach(col=>{
+      const x = ML + col*(hw+2);
+      const lb = col===0?label1:label2;
+      const vl = col===0?val1:val2;
+      const ac = col===0?accent1:accent2;
+      setFill(ac ? GREENLG : [249,252,250]);
+      setDraw(GREENS);
+      doc.setLineWidth(0.2);
+      doc.roundedRect(x, currentY, hw, rowH, 1,1,'FD');
+      doc.setFont('helvetica','bold'); setTxt(DIMTXT); doc.setFontSize(6.5);
+      doc.text(lb.toUpperCase(), x+3, currentY+3.5);
+      doc.setFont('helvetica','normal'); setTxt(ac?GREEN:DARK); doc.setFontSize(8.5);
+      doc.text(vl?String(vl):'—', x+3, currentY+7.5, {maxWidth:hw-6});
+    });
+    currentY += rowH + 1.5;
+  }
+
+  // ─── Caja de texto libre (observaciones) ─────────
+  function textBox(label, text){
+    if(!text||!text.trim()) return;
+    if(currentY > H-40){ newPage(); }
+    const lines = doc.splitTextToSize(text, CW-8);
+    const bh = Math.max(14, lines.length*4.5 + 8);
+    if(currentY + bh > H-20){ newPage(); }
+    setFill(GREENLG); setDraw(GREENS);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(ML, currentY, CW, bh, 1.5,1.5,'FD');
+    doc.setFont('helvetica','bold'); setTxt(DIMTXT); doc.setFontSize(6.5);
+    doc.text(label.toUpperCase(), ML+3, currentY+4);
+    doc.setFont('helvetica','normal'); setTxt(MIDG); doc.setFontSize(8);
+    doc.text(lines, ML+4, currentY+9);
+    currentY += bh + 2.5;
+  }
+
+  // ─── Tabla de breakers ────────────────────────────
+  function breakersTable(breakers){
+    if(!breakers||!breakers.length) return;
+    if(currentY > H-60){ newPage(); }
+    const headers = ['#','Circuito','Tipo de Carga','Canal CT','Amperaje'];
+    const colW    = [10, 48, 52, 30, 24];
+    const rowH    = 8;
+
+    // Header
+    setFill(GREEN2);
+    doc.rect(ML, currentY, CW, rowH, 'F');
+    doc.setFont('helvetica','bold'); setTxt(WHITE); doc.setFontSize(7.5);
+    let cx=ML;
+    headers.forEach((h,i)=>{ doc.text(h,cx+colW[i]/2,currentY+5.5,{align:'center'}); cx+=colW[i]; });
+    currentY += rowH;
+
+    breakers.forEach((b,idx)=>{
+      if(currentY > H-20){ newPage(); drawBreakersContHeader(); }
+      const even = idx%2===0;
+      setFill(even?GREENLG:WHITE); setDraw(GREENS);
+      doc.setLineWidth(0.15);
+      doc.rect(ML, currentY, CW, rowH, 'FD');
+
+      doc.setFont('helvetica','bold'); setTxt(GREEN2); doc.setFontSize(8);
+      cx=ML;
+      doc.text(String(b.number||idx+1), cx+colW[0]/2, currentY+5.5, {align:'center'}); cx+=colW[0];
+      doc.setFont('helvetica','normal'); setTxt(DARK);
+      [b.name||'—', b.type||'—', b.sensor||'—', b.amp||'—'].forEach((v,i)=>{
+        const txt=doc.splitTextToSize(String(v),colW[i+1]-4);
+        doc.text(txt[0]||'—', cx+3, currentY+5.5); cx+=colW[i+1];
+      });
+      currentY += rowH;
+    });
+    currentY += 3;
+  }
+
+  // ─── Foto en PDF ─────────────────────────────────
+  async function addPhoto(dataUrl, label, x, y, w, h){
+    if(!dataUrl) return;
+    try{
+      const jpeg = await getImgData(dataUrl, 600, 500);
+      if(!jpeg) return;
+      // Marco
+      setFill(WHITE); setDraw(GREENS);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(x-0.5, y-0.5, w+1, h+1, 1.5,1.5,'FD');
+      doc.addImage(jpeg,'JPEG',x,y,w,h,'','FAST');
+      // Etiqueta bajo la foto
+      setFill(GREEN); doc.rect(x,y+h,w,5,'F');
+      doc.setFont('helvetica','normal'); setTxt(WHITE); doc.setFontSize(6);
+      doc.text(label||'', x+w/2, y+h+3.5, {align:'center', maxWidth:w-2});
+    }catch(e){ console.warn('Foto omitida:',e); }
+  }
+
+  // ─── Estado con color ─────────────────────────────
+  function estadoColor(e){
+    const m={'Excelente':GREEN,'Bueno':[122,96,0],'Regular':[201,106,26],'Deficiente':[184,50,50]};
+    return m[e]||DARK;
+  }
+
+  // ─── Nueva página ────────────────────────────────
+  let pageCount=1;
+  function newPage(){
+    doc.addPage();
+    pageCount++;
+    drawHeader(false);
+  }
+  function drawBreakersContHeader(){
+    sectionTitle('Mapa de Circuitos (cont.)','🔌');
+    const headers=['#','Circuito','Tipo de Carga','Canal CT','Amperaje'];
+    const colW=[10,48,52,30,24];
+    setFill(GREEN2); doc.rect(ML,currentY,CW,8,'F');
+    doc.setFont('helvetica','bold'); setTxt(WHITE); doc.setFontSize(7.5);
+    let cx=ML;
+    headers.forEach((h,i)=>{ doc.text(h,cx+colW[i]/2,currentY+5.5,{align:'center'}); cx+=colW[i]; });
+    currentY+=8;
+  }
+
+  // ════════════════════════════════════════════
+  //  CONSTRUIR EL DOCUMENTO
+  // ════════════════════════════════════════════
+
+  // ─── Página 1: Header ───────────────────────
+  await drawHeader(true);
+
+  // ─── Tarjeta hero: propiedad ─────────────────
+  setFill(GREENLG); setDraw(GREENS);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(ML, currentY-4, CW, 22, 2,2,'FD');
+  // Stripe lateral
+  setFill(GREEN); doc.roundedRect(ML, currentY-4, 3, 22, 1,1,'F');
+
+  doc.setFont('helvetica','bold'); setTxt(GREEN); doc.setFontSize(14);
+  doc.text(p.name||'Propiedad sin nombre', ML+8, currentY+5);
+  doc.setFont('helvetica','normal'); setTxt(MIDG); doc.setFontSize(8.5);
+  doc.text(p.address||'Dirección no registrada', ML+8, currentY+11);
+
+  // Badge tipo propiedad
+  const badgeColors={Casa:GREEN,Apartamento:NAVY,Comercial:[201,106,26],Industrial:[106,58,154]};
+  const bc=badgeColors[p.propType]||GREEN;
+  setFill(bc);
+  doc.roundedRect(W-MR-28, currentY-2, 26, 8, 1.5,1.5,'F');
+  doc.setFont('helvetica','bold'); setTxt(WHITE); doc.setFontSize(7.5);
+  doc.text(p.propType||'Casa', W-MR-15, currentY+3.5, {align:'center'});
+
+  // Estado eléctrico
+  const ec=estadoColor(p.elecState);
+  setFill(ec); doc.roundedRect(W-MR-28, currentY+8, 26, 7, 1.5,1.5,'F');
+  doc.setFont('helvetica','bold'); setTxt(WHITE); doc.setFontSize(7);
+  doc.text(p.elecState||'—', W-MR-15, currentY+13, {align:'center'});
+
+  currentY += 24;
+
+  // ─── Datos del cliente ───────────────────────
+  sectionTitle('Datos del Cliente y Propiedad','👤');
+  dataRow2('Propietario / Contacto', p.owner||'—', 'Teléfono', p.phone||'—', true, false);
+  dataRow2('Dirección', p.address||'—', 'Tipo de Propiedad', p.propType||'—');
+  dataRow2('Número de Habitaciones', p.rooms||'—', 'Fase Eléctrica', p.phase||'—');
+  dataRow2('Sistema Energético', p.energyType||'—', 'Estado Eléctrico', p.elecState||'—', false, true);
+
+  const ee=p.energyExtra||{};
+  if(p.energyType!=='Solo Red Eléctrica' && p.energyType){
+    if(ee.solarKw||ee.solarPanels) dataRow2('Potencia Solar (kWp)',ee.solarKw||'—','N° Paneles',ee.solarPanels||'—');
+    if(ee.inverter) dataRow('Marca / Modelo Inversor', ee.inverter);
+    if(ee.batCap||ee.batModel) dataRow2('Capacidad Batería',ee.batCap||'—','Modelo Batería',ee.batModel||'—');
+  }
+
+  // ─── Factura eléctrica ───────────────────────
+  if(p.bill1||p.bill2){
+    sectionTitle('Consumo Eléctrico Registrado','💡');
+    const b1=p.bill1?parseFloat(p.bill1):0, b2=p.bill2?parseFloat(p.bill2):0;
+    const avg=(b1&&b2)?(b1+b2)/2:(b1||b2);
+    dataRow2(p.bill1Month||'Mes Reciente', p.bill1?'$'+parseFloat(p.bill1).toFixed(2):'—',
+             p.bill2Month||'Mes Anterior', p.bill2?'$'+parseFloat(p.bill2).toFixed(2):'—', true, true);
+    dataRow('Factura Promedio (2 meses)', '$'+avg.toFixed(2), false, true);
+    // Nota informativa
+    currentY+=2;
+    setFill([255,253,235]); setDraw([200,180,80]);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(ML, currentY, CW, 11, 1.5,1.5,'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); setTxt([130,100,0]);
+    doc.text('ℹ  NOTA:', ML+3, currentY+4.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); setTxt([100,80,10]);
+    doc.text('Los valores de factura fueron reportados por el cliente al momento de la visita técnica.', ML+20, currentY+4.5);
+    doc.text('La plataforma PAOER permitirá verificar y analizar el consumo real en tiempo real.', ML+3, currentY+8.5);
+    currentY += 14;
+  }
+
+  // ─── Medidor Emporia ─────────────────────────
+  sectionTitle('Medidor Emporia Vue 3 Instalado','📡');
+  dataRow2('Número de Serie / Device ID', p.serial||'—', 'Conectividad', p.connectivity||'—');
+  dataRow2('Canales CT Utilizados', p.ctChannels||'—', 'Red WiFi (SSID)', p.wifi||'—');
+  if(p.meterLoc) dataRow('Ubicación del Medidor en la Propiedad', p.meterLoc, true);
+  if(p.meterObs) textBox('Observaciones del Medidor', p.meterObs);
+
+  // ─── Circuitos ───────────────────────────────
+  if(p.breakers&&p.breakers.length){
+    sectionTitle(`Mapa de Circuitos — ${p.breakers.length} Registrados`,'🔌');
+    breakersTable(p.breakers);
+  }
+
+  // ─── Observaciones generales ─────────────────
+  if(p.notes) textBox('Observaciones Generales', p.notes);
+
+  // ─── Fotos ───────────────────────────────────
+  const allPhotos = [];
+  const PHOTO_LABELS = {
+    facade:'Fachada / Exterior',
+    panel:'Panel Eléctrico Principal',
+    breakers:'Tablero de Breakers',
+    meter:'Medidor Emporia Instalado',
+    sensors:'Sensores CT Instalados',
+    extra:'Fotos Adicionales'
+  };
+  Object.entries(p.photos||{}).forEach(([key,arr])=>{
+    (arr||[]).forEach(ph=>{ if(ph&&ph.data) allPhotos.push({data:ph.data,label:PHOTO_LABELS[key]||key}); });
+  });
+
+  if(allPhotos.length){
+    newPage();
+    sectionTitle(`Registro Fotográfico de la Instalación — ${allPhotos.length} foto${allPhotos.length>1?'s':''}`, '📸');
+    currentY += 2;
+
+    const COLS=2, PHOTO_W=(CW-6)/COLS, PHOTO_H=52;
+    for(let i=0;i<allPhotos.length;i+=COLS){
+      const group=allPhotos.slice(i,i+COLS);
+      if(currentY+PHOTO_H+8 > H-20){ newPage(); sectionTitle('Registro Fotográfico (cont.)','📸'); currentY+=2; }
+      for(let c=0;c<group.length;c++){
+        const ph=group[c];
+        const x=ML + c*(PHOTO_W+6);
+        await addPhoto(ph.data, ph.label, x, currentY, PHOTO_W, PHOTO_H);
+      }
+      currentY += PHOTO_H+8;
+    }
+  }
+
+  // ─── Página de firma ─────────────────────────
+  newPage();
+  sectionTitle('Detalles de la Instalación','🛠️');
+  dataRow2('Técnico Instalador', p.tech||'Luis Lasso', 'Supervisor del Proyecto', 'Ing. Jesús Alvarado Rojas');
+  dataRow2('Fecha de Instalación', p.installDate||'—', 'Hora del Informe', now.toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'}));
+  dataRow('ID del Registro', p.id||'—');
+  currentY += 10;
+
+  // Bloque de firmas
+  const sigW=(CW-14)/2;
+  [0,1].forEach(col=>{
+    const sx = ML + col*(sigW+14);
+    const nombre = col===0 ? (p.tech||'Luis Lasso') : 'Ing. Jesús Alvarado Rojas';
+    const cargo  = col===0 ? 'Técnico Instalador MTG' : 'Supervisor — Meta Technology Global';
+
+    // Línea de firma
+    setDraw(GREENS); doc.setLineWidth(0.4);
+    doc.line(sx+6, currentY+22, sx+sigW-6, currentY+22);
+
+    // Nombre y cargo
+    doc.setFont('helvetica','bold'); setTxt(DARK); doc.setFontSize(8.5);
+    doc.text(nombre, sx+sigW/2, currentY+28, {align:'center'});
+    doc.setFont('helvetica','normal'); setTxt(DIMTXT); doc.setFontSize(7.5);
+    doc.text(cargo, sx+sigW/2, currentY+33, {align:'center'});
+  });
+  currentY += 42;
+
+  // Sello / aviso final
+  setFill(GREENLG); setDraw(GREENS);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(ML, currentY, CW, 28, 2,2,'FD');
+  setFill(GREEN); doc.roundedRect(ML, currentY, CW, 7, 2,2,'F'); doc.rect(ML,currentY+3,CW,4,'F');
+  doc.setFont('helvetica','bold'); setTxt(WHITE); doc.setFontSize(8);
+  doc.text('PRÓXIMOS PASOS CON LA PLATAFORMA PAOER', W/2, currentY+5, {align:'center'});
+  doc.setFont('helvetica','normal'); setTxt(MIDG); doc.setFontSize(7.5);
+  const pasos=[
+    '✓  Su medidor Emporia Vue 3 comenzará a registrar el consumo eléctrico por circuito en tiempo real.',
+    '✓  Recibirá acceso al dashboard web donde podrá ver su consumo, detectar ineficiencias y ahorrar en su factura.',
+    '✓  Nuestro equipo monitoreará alertas de consumo anómalo y le notificará ante cualquier irregularidad eléctrica.',
+  ];
+  pasos.forEach((paso,i)=>{ doc.text(paso, ML+4, currentY+12+i*5.5, {maxWidth:CW-8}); });
+  currentY += 32;
+
+  // ─── Pies de página en todas las páginas ────────
+  const totalPages=doc.internal.getNumberOfPages();
+  for(let pg=1;pg<=totalPages;pg++){
+    doc.setPage(pg);
+    drawFooter(pg, totalPages);
+  }
+
+  // ─── Guardar ─────────────────────────────────────
+  const nombreArchivo = `MTG_Informe_${(p.name||'propiedad').replace(/[^a-zA-Z0-9]/g,'_')}_${fechaArchivo}.pdf`;
+  doc.save(nombreArchivo);
+  showToast('✅ Informe PDF generado');
+}
 </script>
+
+<!-- MODAL QR -->
+<div class="modal-overlay" id="qr-overlay" onclick="closeQR()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Código QR de la Propiedad</div>
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:8px">Escanea para acceder rápidamente al registro en la próxima visita técnica.</p>
+    <div id="qr-container"></div>
+    <p id="qr-prop-name" style="text-align:center;font-size:12px;color:var(--text-dim);margin-top:6px"></p>
+    <button class="btn-secondary" onclick="closeQR()" style="margin-top:8px">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL -->
+<div class="modal-overlay" id="visits-overlay" onclick="closeVisits()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Historial de Visitas</div>
+    <div id="visits-list"></div>
+    <div style="border-top:1.5px solid var(--border);padding-top:14px;margin-top:6px">
+      <p style="font-size:11px;font-weight:700;color:var(--text-mid);letter-spacing:1px;margin-bottom:10px">AGREGAR VISITA</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="date" id="v-date" style="border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;font-family:'Outfit',sans-serif;background:var(--white);color:var(--text)">
+        <input type="text" id="v-tech" placeholder="Técnico" style="border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;font-family:'Outfit',sans-serif;background:var(--white);color:var(--text)">
+      </div>
+      <input type="text" id="v-title" placeholder="Motivo (ej: Revisión de conectividad)" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;font-family:'Outfit',sans-serif;background:var(--white);color:var(--text);margin-bottom:8px">
+      <textarea id="v-note" placeholder="Notas de la visita…" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;font-family:'Outfit',sans-serif;background:var(--white);color:var(--text);height:70px;resize:none"></textarea>
+      <button class="btn-primary" onclick="saveVisit()" style="margin-top:8px">💾 Guardar Visita</button>
+    </div>
+    <button class="btn-secondary" onclick="closeVisits()" style="margin-top:8px">Cerrar</button>
+  </div>
+</div>
 
 <!-- CONFIRM MODAL -->
 <div id="mtg-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,31,21,0.55);z-index:500;backdrop-filter:blur(4px);align-items:center;justify-content:center">
