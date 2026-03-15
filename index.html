@@ -1519,7 +1519,7 @@ function sendWhatsApp(id){
 // 6. Copia el Client ID y pégalo en MTG_DRIVE_CLIENT_ID abajo
 // 7. Crea una clave de API y pégala en MTG_DRIVE_API_KEY
 
-const MTG_DRIVE_CLIENT_ID = localStorage.getItem('mtg_drive_client_id') || '';
+const MTG_DRIVE_CLIENT_ID = localStorage.getItem('mtg_drive_client_id') || '968302680039-q683p7d6cv9tdifealhoa0edeh1tmdtl.apps.googleusercontent.com';
 const MTG_DRIVE_API_KEY   = localStorage.getItem('mtg_drive_api_key')   || '';
 const MTG_DRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.appdata';
 const MTG_DRIVE_FOLDER    = 'MTG_PAOER_Backups';
@@ -1530,7 +1530,7 @@ let driveTokenClient = null;
 
 function driveInit(){
   // Verificar si hay credenciales configuradas
-  const cid = localStorage.getItem('mtg_drive_client_id');
+  const cid = localStorage.getItem('mtg_drive_client_id') || MTG_DRIVE_CLIENT_ID;
   if(!cid){
     // Mostrar modal de configuración
     showDriveConfig();
@@ -1538,7 +1538,7 @@ function driveInit(){
   }
   if(!driveTokenClient){
     driveTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: cid,
+      client_id: MTG_DRIVE_CLIENT_ID || cid,
       scope: 'https://www.googleapis.com/auth/drive.file',
       callback: async (resp) => {
         if(resp.error){ showToast('❌ Error al conectar con Google'); return; }
@@ -1553,7 +1553,7 @@ function driveInit(){
 }
 
 function driveAction(){
-  const cid = localStorage.getItem('mtg_drive_client_id');
+  const cid = localStorage.getItem('mtg_drive_client_id') || MTG_DRIVE_CLIENT_ID;
   if(!cid){
     showDriveConfig();
     return;
