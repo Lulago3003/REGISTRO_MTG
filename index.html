@@ -277,7 +277,51 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .drive-status{font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:4px;font-weight:500}
 .drive-status.connected{color:var(--green)}
 
+
+/* ── ARIA Sync ────────────────────────────────────────────── */
+.aria-modal-wrap{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}
+.aria-modal-wrap.open{display:flex}
+.aria-panel{background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 48px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto}
+.aria-panel-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--green);font-weight:700;margin-bottom:4px}
+.aria-panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.5}
+.aria-field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.aria-field label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase}
+.aria-field input{background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px 14px;font-size:13px;font-family:'Outfit',sans-serif;color:var(--text);outline:none;transition:border .15s}
+.aria-field input:focus{border-color:var(--green-mid)}
+.btn-aria-go{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#1A6E45,#228B55);color:#fff;font-size:15px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;margin-top:6px;box-shadow:0 4px 14px rgba(26,110,69,.3);transition:opacity .15s}
+.btn-aria-go:disabled{opacity:.6;cursor:default}
+.btn-aria-go:active{transform:scale(0.98)}
+.btn-aria-close{width:100%;padding:13px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--text-mid);font-size:14px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;margin-top:9px}
+.aria-result{margin-top:14px;padding:14px;border-radius:12px;font-size:13px;line-height:1.6;display:none}
+.aria-result.ok{background:#E2F5EB;color:#1A6E45;border:1.5px solid var(--border2)}
+.aria-result.err{background:var(--red-bg);color:var(--red);border:1.5px solid #F0B8B8}
+.aria-pending-pill{background:var(--green);color:#fff;border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;margin-left:auto;flex-shrink:0;display:none}
+.chip-synced{background:#E2F5EB;color:#1A6E45;border-color:var(--border2)!important}
+
+/* ── Modo Oscuro ──────────────────────────────────────────── */
+[data-theme="dark"]{
+  --bg:#0D1F15;--white:#122019;--surface2:#1A2E22;
+  --border:#2A4A36;--border2:#3A6A4E;
+  --text:#E8F5EE;--text-mid:#9FD4B4;--text-dim:#5A8A70;
+  --shadow-sm:0 1px 4px rgba(0,0,0,.3);--shadow-md:0 4px 18px rgba(0,0,0,.35);--shadow-lg:0 10px 36px rgba(0,0,0,.4);
+  --warn-bg:#2A1A08;--red-bg:#2A0808;
+}
+[data-theme="dark"] .home-hero{background:linear-gradient(145deg,#0D3D22 0%,#154D30 55%,#1A6040 100%)}
+[data-theme="dark"] .logo-pill{background:linear-gradient(135deg,#0D3D22,#154D30)}
+[data-theme="dark"] .card-btn-pdf{background:linear-gradient(135deg,#0D2A5A,#1A3D80)}
+[data-theme="dark"] .btn-primary{background:linear-gradient(135deg,#0D3D22,#154D30)}
+[data-theme="dark"] .fab{background:linear-gradient(135deg,#0D3D22,#154D30)}
+[data-theme="dark"] .export-sheet,[data-theme="dark"] .aria-panel{background:#122019}
+[data-theme="dark"] .nav-bar{background:rgba(18,32,25,0.97)}
+
+/* ── Validación visual ────────────────────────────────────── */
+.field.error input,.field.error textarea,.field.error select{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(184,50,50,.12)}
+.field-err-msg{font-size:11px;color:var(--red);margin-top:4px;font-weight:700;animation:fadeUp .2s ease}
+
+/* ── Auto-save indicador ─────────────────────────────────── */
+.draft-toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:600;background:rgba(26,110,69,.92);color:#fff;border-radius:10px;padding:7px 16px;font-size:12px;font-weight:600;display:none;white-space:nowrap;pointer-events:none;backdrop-filter:blur(8px)}
 </style>
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 
@@ -286,7 +330,10 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   <div class="header">
     <div class="logo-pill"><div class="logo-dot"></div><div class="logo-dot on"></div><span>MTG</span></div>
     <div class="header-titles"><h1>Registro MTG</h1><p>META TECHNOLOGY GLOBAL</p></div>
-    <div class="header-right"><div class="btn-icon" onclick="openExport()">📤</div></div>
+    <div class="header-right">
+      <div class="btn-icon" id="dark-toggle" onclick="toggleDark()" title="Modo oscuro">🌙</div>
+      <div class="btn-icon" onclick="openExport()">📤</div>
+    </div>
   </div>
   <div class="scroll-body">
     <div class="home-hero">
@@ -496,6 +543,7 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
       <div class="field"><label>OBSERVACIONES GENERALES</label><textarea id="f-notes" placeholder="Notas adicionales, próximos pasos, alertas, condiciones especiales…"></textarea></div>
     </div>
 
+    <div class="draft-toast" id="draft-toast">💾 Borrador guardado automáticamente</div>
     <button class="btn-primary" id="save-btn" onclick="saveProperty()">💾 Guardar Registro</button>
     <button class="btn-secondary" onclick="goHome()">Cancelar</button>
     <div style="height:18px"></div>
@@ -513,6 +561,11 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 <div class="export-sheet" id="export-sheet">
   <div class="sheet-handle"></div>
   <div class="sheet-title">Exportar Datos</div>
+  <div class="export-opt" onclick="openAriaSync()" style="background:linear-gradient(135deg,#E8F5EE,#D2EDE0);border-color:var(--border2);display:flex;align-items:center">
+    <div class="eo-icon">☁️</div>
+    <div style="flex:1"><h4 style="color:var(--green)">Sincronizar con ARIA</h4><p>Envía registros a la plataforma de gestión ARIA</p></div>
+    <div class="aria-pending-pill" id="aria-pending-pill"></div>
+  </div>
   <div class="export-opt" onclick="exportExcel()"><div class="eo-icon">📊</div><div><h4>Excel (.xlsx)</h4><p>Propiedades, circuitos, fotos y facturas en hoja de cálculo</p></div></div>
   <div class="export-opt" onclick="exportJSON()"><div class="eo-icon">🗃️</div><div><h4>Copia de Seguridad (.json)</h4><p>Backup completo con fotos — restaurable en otro dispositivo</p></div></div>
   <div class="export-opt" onclick="importJSON()"><div class="eo-icon">📥</div><div><h4>Restaurar Backup</h4><p>Importar archivo .json de respaldo</p></div></div>
@@ -555,7 +608,7 @@ const CIRCUIT_TYPES=[
 window.onload=()=>{
   try{const s=localStorage.getItem('mtg_v2');if(s)properties=JSON.parse(s);}catch(e){}
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-  renderPhotoSections(); renderChecklist(); renderProperties(); updateStats();
+  renderPhotoSections(); renderChecklist(); renderProperties(); updateStats(); updateAriaBadge();
   // Restore saved logo
   const savedLogo=localStorage.getItem('mtg_logo');
   if(savedLogo) applyLogoPreview(savedLogo);
@@ -589,7 +642,20 @@ function save(){
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function goHome(){renderProperties();updateStats();showScreen('screen-home');}
-function gotoNew(){resetForm();showScreen('screen-form');}
+function gotoNew(){
+  const draft=_getDraft();
+  if(draft&&draft.name&&!editingId){
+    mtgConfirm(
+      '📄 Borrador guardado',
+      `"${draft.name}" — guardado recientemente. ¿Restaurarlo?`,
+      ()=>{ resetForm(); setTimeout(()=>{_restoreDraft(draft);showScreen('screen-form');startDraftTimer();},80); }
+    );
+    // Set confirm button text
+    setTimeout(()=>{ const b=document.getElementById('mtg-modal-confirm'); if(b) b.textContent='Restaurar'; },10);
+    return;
+  }
+  resetForm();showScreen('screen-form');startDraftTimer();
+}
 
 function selToggle(el,gid){document.querySelectorAll(`#${gid} .toggle-card`).forEach(c=>c.classList.remove('active'));el.classList.add('active');}
 
@@ -632,7 +698,13 @@ function renderPhotoSections(){
 function handlePhoto(e,key){
   Array.from(e.target.files).forEach(f=>{
     const r=new FileReader();
-    r.onload=ev=>{photoData[key].push({data:ev.target.result,name:f.name});renderPreview(key);};
+    r.onload=ev=>{
+      _compressImg(ev.target.result,900,0.78).then(compressed=>{
+        photoData[key].push({data:compressed,name:f.name});
+        renderPreview(key);
+        showToast('📷 Foto comprimida y guardada');
+      });
+    };
     r.readAsDataURL(f);
   });e.target.value='';
 }
@@ -694,7 +766,15 @@ function resetForm(){
 
 function saveProperty(){
   const name=document.getElementById('f-name').value.trim();
-  if(!name){showToast('⚠️ Ingresa el nombre de la propiedad');return;}
+  if(!name){
+    const el=document.getElementById('f-name');
+    const wrap=el?.closest('.field');
+    if(wrap){wrap.classList.add('error');if(!wrap.querySelector('.field-err-msg')){const m=document.createElement('div');m.className='field-err-msg';m.textContent='Campo requerido';wrap.appendChild(m);}}
+    el?.scrollIntoView({behavior:'smooth',block:'center'});
+    showToast('⚠️ Ingresa el nombre de la propiedad');return;
+  }
+  // clear validation errors
+  document.querySelectorAll('.field.error').forEach(f=>{f.classList.remove('error');f.querySelector('.field-err-msg')?.remove();});
   const propType=document.querySelector('#prop-type-group .toggle-card.active')?.dataset.val||'Casa';
   const energyType=document.querySelector('#energy-group .energy-opt.active')?.dataset.val||'Solo Red Eléctrica';
   const ee={};
@@ -743,6 +823,8 @@ function saveProperty(){
   else properties.unshift(prop);
   try{ save(); } catch(e){ console.warn('save error',e); }
   showToast('✅ Registro guardado');
+  updateAriaBadge();
+  clearDraft();
   setTimeout(()=>goHome(),300);
 }
 
@@ -759,6 +841,9 @@ function renderProperties(list=null){
     chips.push(`<span class="chip">🔌 ${p.breakers?.length||0} circuitos</span>`);
     if(p.installDate)chips.push(`<span class="chip">📅 ${p.installDate}</span>`);
     if(p.status&&p.status!=='Instalado'){const sc={'Pendiente revisión':'#C96A1A','Activo en PAOER':'#2255A5','Con incidencia':'#B83232'}[p.status]||'#1A6E45';chips.push(`<span class="chip" style="color:${sc};border-color:${sc}">${p.status}</span>`);}
+    chips.push(p.aria_synced
+      ? `<span class="chip chip-synced">☁️ ARIA</span>`
+      : `<span class="chip" style="color:var(--text-dim);border-color:var(--border)">⏳ sin sync</span>`);
     return`<div class="prop-card" style="animation-delay:${Math.min(i,6)*.05}s">
       <div class="card-stripe"></div>
       <div class="card-body" onclick="showDetail('${p.id}')" style="cursor:pointer">
@@ -2245,6 +2330,28 @@ async function generatePDF(id){
     </div>
   </div>
 </div>
+<!-- ═══ MODAL ARIA SYNC ═══ -->
+<div class="aria-modal-wrap" id="aria-modal-wrap">
+  <div class="aria-panel">
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:4px">
+      <span style="font-size:30px">☁️</span>
+      <div class="aria-panel-title">Sincronizar con ARIA</div>
+    </div>
+    <div class="aria-panel-sub">Ingresa la URL y API Key de tu plataforma ARIA.<br>Los datos se guardan en el dispositivo para la próxima vez.</div>
+    <div class="aria-field">
+      <label>URL del servidor ARIA</label>
+      <input type="url" id="aria-url-input" placeholder="https://aria-paoer-mtg.fly.dev" inputmode="url" autocapitalize="none" autocorrect="off">
+    </div>
+    <div class="aria-field">
+      <label>API Key</label>
+      <input type="text" id="aria-key-input" placeholder="Obtén la clave en ARIA → 🔑 API Key" autocomplete="off" autocapitalize="none">
+    </div>
+    <div class="aria-result" id="aria-result"></div>
+    <button class="btn-aria-go" id="aria-btn-sync" onclick="runAriaSync()">☁️ Sincronizar ahora</button>
+    <button class="btn-aria-close" onclick="closeAriaSync()">Cerrar</button>
+  </div>
+</div>
+
 <script>
 function mtgConfirm(title, body, onConfirm){
   document.getElementById('mtg-modal-title').textContent = title;
@@ -2255,6 +2362,241 @@ function mtgConfirm(title, body, onConfirm){
 }
 function mtgModalClose(){
   document.getElementById('mtg-modal-overlay').style.display='none';
+}
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  ARIA SYNC — conecta app de campo con plataforma ARIA
+// ═══════════════════════════════════════════════════════════
+
+function _ariaConfig(){
+  try{ return JSON.parse(localStorage.getItem('aria_config')||'{}'); }catch(e){ return {}; }
+}
+function _ariaSaveConfig(url, key){
+  localStorage.setItem('aria_config', JSON.stringify({url: url.replace(/\/+$/,''), key}));
+}
+
+function openAriaSync(){
+  closeExport();
+  const cfg = _ariaConfig();
+  if(cfg.url) document.getElementById('aria-url-input').value = cfg.url;
+  if(cfg.key) document.getElementById('aria-key-input').value = cfg.key;
+  const r = document.getElementById('aria-result');
+  r.style.display = 'none';
+  const pending = (properties||[]).filter(p=>!p.aria_synced).length;
+  if(pending){
+    r.innerHTML = `📋 <strong>${pending} registro${pending>1?'s':''} pendiente${pending>1?'s':''}</strong> por sincronizar.`;
+    r.className = 'aria-result ok';
+    r.style.display = 'block';
+  }
+  document.getElementById('aria-modal-wrap').classList.add('open');
+}
+
+function closeAriaSync(){
+  document.getElementById('aria-modal-wrap').classList.remove('open');
+}
+
+function updateAriaBadge(){
+  const pending = (properties||[]).filter(p=>!p.aria_synced).length;
+  const pill = document.getElementById('aria-pending-pill');
+  if(!pill) return;
+  if(pending > 0){
+    pill.textContent = pending + ' pendiente' + (pending>1?'s':'');
+    pill.style.display = 'block';
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
+async function runAriaSync(){
+  const url  = (document.getElementById('aria-url-input').value||'').trim().replace(/\/+$/,'');
+  const key  = (document.getElementById('aria-key-input').value||'').trim();
+  const res  = document.getElementById('aria-result');
+  const btn  = document.getElementById('aria-btn-sync');
+
+  if(!url || !key){
+    res.innerHTML = '⚠️ Ingresa la URL del servidor ARIA y el API Key.';
+    res.className = 'aria-result err'; res.style.display = 'block'; return;
+  }
+  _ariaSaveConfig(url, key);
+
+  const toSync = (properties||[]).filter(p=>!p.aria_synced);
+  if(!toSync.length){
+    res.innerHTML = '✅ Todo ya está sincronizado. Sin registros pendientes.';
+    res.className = 'aria-result ok'; res.style.display = 'block'; return;
+  }
+
+  btn.textContent = '⏳ Sincronizando...';
+  btn.disabled = true;
+  res.style.display = 'none';
+
+  const payload = toSync.map(p=>({
+    id:               p.id,
+    nombre:           p.name||'',
+    direccion:        p.address||'',
+    propietario:      p.owner||'',
+    telefono:         p.phone||'',
+    tipo_propiedad:   p.propType||'Casa',
+    habitaciones:     parseInt(p.rooms)||0,
+    fase:             p.phase||'',
+    tecnico:          p.tech||'',
+    fecha_instalacion:p.installDate||'',
+    hora_instalacion: p.installTime||'',
+    serial_emporia:   p.serial||'',
+    ubicacion_medidor:p.meterLoc||'',
+    canales_ct:       p.ctChannels||'',
+    conectividad:     p.connectivity||'',
+    wifi_ssid:        p.wifi||'',
+    obs_medidor:      p.meterObs||'',
+    tipo_energia:     p.energyType||'Solo Red Eléctrica',
+    energia_extra:    p.energyExtra||{},
+    estado_electrico: p.elecState||'',
+    notas:            p.notes||'',
+    factura1:         parseFloat(p.bill1)||0,
+    factura1_mes:     p.bill1Month||'',
+    factura2:         parseFloat(p.bill2)||0,
+    factura2_mes:     p.bill2Month||'',
+    circuitos:        p.breakers||[],
+    lat:              parseFloat(p.lat)||null,
+    lng:              parseFloat(p.lng)||null,
+    estado:           p.status||'Instalado',
+    checklist:        p.checklist||{},
+  }));
+
+  try{
+    const response = await fetch(`${url}/api/instalaciones/sync`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-ARIA-Key': key},
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if(data.ok){
+      const ids = new Set(toSync.map(p=>p.id));
+      properties = properties.map(p => ids.has(p.id) ? {...p, aria_synced:true} : p);
+      save();
+      updateAriaBadge();
+      renderProperties();
+      res.innerHTML = `✅ <strong>${data.insertados||toSync.length} registros</strong> sincronizados con ARIA correctamente.`;
+      res.className = 'aria-result ok';
+    } else {
+      res.innerHTML = `❌ Error de ARIA: ${data.error||'Respuesta inesperada'}`;
+      res.className = 'aria-result err';
+    }
+  } catch(e){
+    res.innerHTML = `❌ No se pudo conectar con ARIA.<br><small>Verifica la URL y que tengas internet.<br>${e.message}</small>`;
+    res.className = 'aria-result err';
+  } finally {
+    btn.textContent = '☁️ Sincronizar ahora';
+    btn.disabled = false;
+    res.style.display = 'block';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COMPRESIÓN DE IMÁGENES
+// ═══════════════════════════════════════════════════════════
+function _compressImg(src,maxPx,q){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxPx||h>maxPx){const s=Math.min(maxPx/w,maxPx/h);w=Math.round(w*s);h=Math.round(h*s);}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(cv.toDataURL('image/jpeg',q));
+    };
+    img.onerror=()=>resolve(src);
+    img.src=src;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MODO OSCURO
+// ═══════════════════════════════════════════════════════════
+function toggleDark(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',dark?'':'dark');
+  localStorage.setItem('mtg_dark',dark?'0':'1');
+  const btn=document.getElementById('dark-toggle');
+  if(btn) btn.textContent=dark?'🌙':'☀️';
+}
+(function initDark(){
+  if(localStorage.getItem('mtg_dark')==='1'){
+    document.documentElement.setAttribute('data-theme','dark');
+    const btn=document.getElementById('dark-toggle');
+    if(btn) btn.textContent='☀️';
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  AUTO-SAVE BORRADOR
+// ═══════════════════════════════════════════════════════════
+let _draftTimer=null;
+function startDraftTimer(){
+  if(_draftTimer) clearInterval(_draftTimer);
+  _draftTimer=setInterval(saveDraft,20000);
+  window.onbeforeunload=()=>{
+    if(document.getElementById('screen-form')?.classList.contains('active')&&document.getElementById('f-name')?.value?.trim()){
+      saveDraft();
+      return 'Tienes cambios sin guardar.';
+    }
+  };
+}
+function stopDraftTimer(){
+  if(_draftTimer){clearInterval(_draftTimer);_draftTimer=null;}
+  window.onbeforeunload=null;
+}
+function saveDraft(){
+  const name=document.getElementById('f-name')?.value?.trim();
+  if(!name) return;
+  const d={
+    name,
+    address:document.getElementById('f-address')?.value||'',
+    owner:document.getElementById('f-owner')?.value||'',
+    phone:document.getElementById('f-phone')?.value||'',
+    tech:document.getElementById('f-tech')?.value||'',
+    installDate:document.getElementById('f-date')?.value||'',
+    installTime:document.getElementById('f-time')?.value||'',
+    serial:document.getElementById('f-serial')?.value||'',
+    notes:document.getElementById('f-notes')?.value||'',
+    propType:document.querySelector('#prop-type-group .toggle-card.active')?.dataset.val||'Casa',
+    energyType:currentEnergy||'Solo Red Eléctrica',
+    savedAt:new Date().toISOString()
+  };
+  try{localStorage.setItem('mtg_draft',JSON.stringify(d));}catch(e){}
+  const t=document.getElementById('draft-toast');
+  if(t){t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+}
+function clearDraft(){
+  localStorage.removeItem('mtg_draft');
+  stopDraftTimer();
+}
+function _getDraft(){
+  try{return JSON.parse(localStorage.getItem('mtg_draft')||'null');}catch(e){return null;}
+}
+function _restoreDraft(d){
+  const set=(i,v)=>{const el=document.getElementById(i);if(el&&v)el.value=v;};
+  set('f-name',d.name);set('f-address',d.address);set('f-owner',d.owner);
+  set('f-phone',d.phone);set('f-tech',d.tech);set('f-date',d.installDate);
+  set('f-time',d.installTime);set('f-serial',d.serial);set('f-notes',d.notes);
+  if(d.propType) document.querySelectorAll('#prop-type-group .toggle-card').forEach(c=>c.classList.toggle('active',c.dataset.val===d.propType));
+  if(d.energyType&&d.energyType!=='Solo Red Eléctrica'){
+    document.querySelectorAll('#energy-group .energy-opt').forEach(c=>c.classList.toggle('active',c.dataset.val===d.energyType));
+    currentEnergy=d.energyType;renderEnergyExtra();
+  }
+  showToast('✅ Borrador restaurado');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SERVICE WORKER REGISTRATION
+// ═══════════════════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(()=>{
+      console.log('SW registrado ✅');
+    }).catch(e=>console.warn('SW error:',e));
+  });
 }
 </script>
 </body>

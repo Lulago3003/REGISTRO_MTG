@@ -1,0 +1,20 @@
+{
+  "name": "Registro MTG - PAOER",
+  "short_name": "Registro MTG",
+  "description": "App de campo para registro de instalaciones Emporia Vue 3",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F5FAF6",
+  "theme_color": "#1A6E45",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231A6E45'/><text y='.9em' font-size='70' x='15'>⚡</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "lang": "es"
+}
