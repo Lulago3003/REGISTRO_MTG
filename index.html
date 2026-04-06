@@ -2337,14 +2337,13 @@ async function generatePDF(id){
       <span style="font-size:30px">☁️</span>
       <div class="aria-panel-title">Sincronizar con ARIA</div>
     </div>
-    <div class="aria-panel-sub">Ingresa la URL y API Key de tu plataforma ARIA.<br>Los datos se guardan en el dispositivo para la próxima vez.</div>
-    <div class="aria-field">
-      <label>URL del servidor ARIA</label>
-      <input type="url" id="aria-url-input" placeholder="https://aria-paoer-mtg.fly.dev" inputmode="url" autocapitalize="none" autocorrect="off">
-    </div>
-    <div class="aria-field">
-      <label>API Key</label>
-      <input type="text" id="aria-key-input" placeholder="Obtén la clave en ARIA → 🔑 API Key" autocomplete="off" autocapitalize="none">
+    <div class="aria-panel-sub">Los registros se envían automáticamente a la plataforma ARIA · Enerlytics by MTG.<br>El proyecto aparecerá en el CRM y el portal del cliente se activa solo.</div>
+    <div style="background:var(--green-pale);border:1.5px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🟢</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--green)">Conectado a ARIA</div>
+        <div style="font-size:11px;color:var(--text-dim)">aria-paoer-mtg.fly.dev</div>
+      </div>
     </div>
     <div class="aria-result" id="aria-result"></div>
     <button class="btn-aria-go" id="aria-btn-sync" onclick="runAriaSync()">☁️ Sincronizar ahora</button>
@@ -2368,25 +2367,23 @@ function mtgModalClose(){
 <script>
 // ═══════════════════════════════════════════════════════════
 //  ARIA SYNC — conecta app de campo con plataforma ARIA
+//  Sin configuración: URL y clave van hardcodeadas aquí
 // ═══════════════════════════════════════════════════════════
 
-function _ariaConfig(){
-  try{ return JSON.parse(localStorage.getItem('aria_config')||'{}'); }catch(e){ return {}; }
-}
-function _ariaSaveConfig(url, key){
-  localStorage.setItem('aria_config', JSON.stringify({url: url.replace(/\/+$/,''), key}));
-}
+const ARIA_URL = 'https://aria-paoer-mtg.fly.dev';
+const ARIA_KEY = 'MTG-PAOER-FIELD-2025';
 
 function openAriaSync(){
   closeExport();
-  const cfg = _ariaConfig();
-  if(cfg.url) document.getElementById('aria-url-input').value = cfg.url;
-  if(cfg.key) document.getElementById('aria-key-input').value = cfg.key;
   const r = document.getElementById('aria-result');
   r.style.display = 'none';
   const pending = (properties||[]).filter(p=>!p.aria_synced).length;
   if(pending){
     r.innerHTML = `📋 <strong>${pending} registro${pending>1?'s':''} pendiente${pending>1?'s':''}</strong> por sincronizar.`;
+    r.className = 'aria-result ok';
+    r.style.display = 'block';
+  } else {
+    r.innerHTML = '✅ Todo sincronizado.';
     r.className = 'aria-result ok';
     r.style.display = 'block';
   }
@@ -2410,16 +2407,8 @@ function updateAriaBadge(){
 }
 
 async function runAriaSync(){
-  const url  = (document.getElementById('aria-url-input').value||'').trim().replace(/\/+$/,'');
-  const key  = (document.getElementById('aria-key-input').value||'').trim();
-  const res  = document.getElementById('aria-result');
-  const btn  = document.getElementById('aria-btn-sync');
-
-  if(!url || !key){
-    res.innerHTML = '⚠️ Ingresa la URL del servidor ARIA y el API Key.';
-    res.className = 'aria-result err'; res.style.display = 'block'; return;
-  }
-  _ariaSaveConfig(url, key);
+  const res = document.getElementById('aria-result');
+  const btn = document.getElementById('aria-btn-sync');
 
   const toSync = (properties||[]).filter(p=>!p.aria_synced);
   if(!toSync.length){
@@ -2465,9 +2454,9 @@ async function runAriaSync(){
   }));
 
   try{
-    const response = await fetch(`${url}/api/instalaciones/sync`, {
+    const response = await fetch(`${ARIA_URL}/api/instalaciones/sync`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-ARIA-Key': key},
+      headers:{'Content-Type':'application/json','X-ARIA-Key': ARIA_KEY},
       body: JSON.stringify(payload)
     });
     const data = await response.json();
@@ -2477,14 +2466,16 @@ async function runAriaSync(){
       save();
       updateAriaBadge();
       renderProperties();
-      res.innerHTML = `✅ <strong>${data.insertados||toSync.length} registros</strong> sincronizados con ARIA correctamente.`;
+      const n = data.insertados || toSync.length;
+      res.innerHTML = `✅ <strong>${n} registro${n>1?'s':''}</strong> sincronizado${n>1?'s':''} con ARIA.<br>
+        <small style="color:var(--text-dim)">El proyecto aparece en el CRM · El portal del cliente se activa automáticamente.</small>`;
       res.className = 'aria-result ok';
     } else {
-      res.innerHTML = `❌ Error de ARIA: ${data.error||'Respuesta inesperada'}`;
+      res.innerHTML = `❌ Error: ${data.error||'Respuesta inesperada'}`;
       res.className = 'aria-result err';
     }
   } catch(e){
-    res.innerHTML = `❌ No se pudo conectar con ARIA.<br><small>Verifica la URL y que tengas internet.<br>${e.message}</small>`;
+    res.innerHTML = `❌ No se pudo conectar con ARIA.<br><small>Verifica que tengas internet.<br>${e.message}</small>`;
     res.className = 'aria-result err';
   } finally {
     btn.textContent = '☁️ Sincronizar ahora';
